@@ -485,6 +485,7 @@ def manage_settings():
         config.GOOGLE_SHEET_TITLE = data.get("sheet_title", config.GOOGLE_SHEET_TITLE)
         config.GOOGLE_SPREADSHEET_ID = data.get("sheet_id", getattr(config, "GOOGLE_SPREADSHEET_ID", ""))
         config.DEFAULT_SHEET_TAB = data.get("sheet_tab", config.DEFAULT_SHEET_TAB)
+        config.RESUME_DRIVE_FOLDER = data.get("drive_folder", config.RESUME_DRIVE_FOLDER)
         
         keywords = data.get("keywords", "")
         if keywords:
@@ -501,6 +502,7 @@ def manage_settings():
         "sheet_title": config.GOOGLE_SHEET_TITLE,
         "sheet_id": getattr(config, "GOOGLE_SPREADSHEET_ID", ""),
         "sheet_tab": config.DEFAULT_SHEET_TAB,
+        "drive_folder": config.RESUME_DRIVE_FOLDER,
         "keywords": ", ".join(config.DEFAULT_KEYWORDS)
     })
 

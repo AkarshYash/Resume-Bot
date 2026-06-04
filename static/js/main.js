@@ -533,6 +533,7 @@ async function loadSettings() {
         document.getElementById('sheet_title').value = data.sheet_title;
         document.getElementById('sheet_id').value = data.sheet_id;
         document.getElementById('sheet_tab').value = data.sheet_tab;
+        document.getElementById('drive_folder').value = data.drive_folder || '';
         document.getElementById('keywords').value = data.keywords;
     } catch (e) {
         console.error('Load settings error:', e);
@@ -548,6 +549,7 @@ async function saveSettings() {
         sheet_title: document.getElementById('sheet_title').value,
         sheet_id: document.getElementById('sheet_id').value,
         sheet_tab: document.getElementById('sheet_tab').value,
+        drive_folder: document.getElementById('drive_folder').value,
         keywords: document.getElementById('keywords').value
     };
     try {
