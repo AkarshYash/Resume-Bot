@@ -2,6 +2,22 @@ import os
 import json
 import base64
 
+# Load local .env if it exists (for local dev)
+_env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+if os.path.exists(_env_path):
+    try:
+        with open(_env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    # Remove surrounding quotes if any
+                    k_str = k.strip()
+                    v_str = v.strip().strip("'\"")
+                    os.environ[k_str] = v_str
+    except Exception as e:
+        print(f"Warning: Could not load .env file: {e}")
+
 # ─────────────────────────────────────────────────────────────────────────────
 #  API KEYS & LLM CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────────────

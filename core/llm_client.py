@@ -53,8 +53,10 @@ class LLMClient:
                 response = model.generate_content(user_prompt)
                 return response.text.strip()
             except Exception as e:
-                if "429" in str(e) and attempt < max_retries - 1:
-                    time.sleep(15)  # Wait 15 seconds to clear the rate limit
+                if attempt < max_retries - 1:
+                    wait = 15 * (attempt + 1)
+                    print(f"Gemini API/network error (attempt {attempt+1}/{max_retries}): {e}. Retrying in {wait}s...")
+                    time.sleep(wait)
                     continue
                 raise e
 
@@ -80,34 +82,41 @@ class LLMClient:
 
         max_retries = 5
         for attempt in range(max_retries):
-            response = requests.post(url, headers=headers, json=data)
-            if response.status_code == 429 and attempt < max_retries - 1:
-                # Parse retry-after hint from error, default to exponential backoff
-                wait = 20 * (attempt + 1)  # 20s, 40s, 60s, 80s
-                try:
-                    err = response.json()
-                    msg = err.get("error", {}).get("message", "")
-                    import re as _re
-                    m = _re.search(r"try again in ([\d.]+)s", msg)
-                    if m:
-                        wait = float(m.group(1)) + 2  # add 2s buffer
-                except Exception:
-                    pass
-                print(f"Groq rate limited (attempt {attempt+1}/{max_retries}), waiting {wait:.0f}s...")
-                time.sleep(wait)
-                continue
-            if response.status_code != 200:
-                raise Exception(f"Groq API Error: {response.text}")
-            break
-        
-        res_json = response.json()
-        return res_json["choices"][0]["message"]["content"].strip()
+            try:
+                response = requests.post(url, headers=headers, json=data, timeout=60)
+                if response.status_code == 429 and attempt < max_retries - 1:
+                    # Parse retry-after hint from error, default to exponential backoff
+                    wait = 20 * (attempt + 1)  # 20s, 40s, 60s, 80s
+                    try:
+                        err = response.json()
+                        msg = err.get("error", {}).get("message", "")
+                        import re as _re
+                        m = _re.search(r"try again in ([\d.]+)s", msg)
+                        if m:
+                            wait = float(m.group(1)) + 2  # add 2s buffer
+                    except Exception:
+                        pass
+                    print(f"Groq rate limited (attempt {attempt+1}/{max_retries}), waiting {wait:.0f}s...")
+                    time.sleep(wait)
+                    continue
+                if response.status_code != 200:
+                    raise Exception(f"Groq API Error: {response.text}")
+                res_json = response.json()
+                return res_json["choices"][0]["message"]["content"].strip()
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    wait = 10 * (attempt + 1)
+                    print(f"Groq network/API error (attempt {attempt+1}/{max_retries}): {e}. Retrying in {wait}s...")
+                    time.sleep(wait)
+                    continue
+                raise e
 
     @staticmethod
     def _call_openrouter(system_prompt: str, user_prompt: str) -> str:
         if not config.OPENROUTER_API_KEY:
             raise ValueError("OpenRouter API key is not configured (set OPENROUTER_API_KEY).")
         
+        import time
         url = "https://openrouter.ai/api/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {config.OPENROUTER_API_KEY}",
@@ -120,12 +129,27 @@ class LLMClient:
                 {"role": "user", "content": user_prompt}
             ]
         }
-        response = requests.post(url, headers=headers, json=data)
-        if response.status_code != 200:
-            raise Exception(f"OpenRouter API Error: {response.text}")
         
-        res_json = response.json()
-        return res_json["choices"][0]["message"]["content"].strip()
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(url, headers=headers, json=data, timeout=60)
+                if response.status_code == 429 and attempt < max_retries - 1:
+                    wait = 20 * (attempt + 1)
+                    print(f"OpenRouter rate limited (attempt {attempt+1}/{max_retries}), waiting {wait}s...")
+                    time.sleep(wait)
+                    continue
+                if response.status_code != 200:
+                    raise Exception(f"OpenRouter API Error: {response.text}")
+                res_json = response.json()
+                return res_json["choices"][0]["message"]["content"].strip()
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    wait = 10 * (attempt + 1)
+                    print(f"OpenRouter network/API error (attempt {attempt+1}/{max_retries}): {e}. Retrying in {wait}s...")
+                    time.sleep(wait)
+                    continue
+                raise e
 
     @staticmethod
     def clean_json_response(raw_text: str) -> dict:
