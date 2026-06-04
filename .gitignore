@@ -1,0 +1,36 @@
+# Credentials & secrets
+credentials.json
+token.json
+*.env
+.env
+
+# Generated files
+Generated_Resumes/
+job_queue.json
+tailored_resume_*.pdf
+
+# Test files
+test_*.py
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Streamlit (old)
+.streamlit/
+app.py
+resume_automator.py

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Bot — AI Job Automator</title>
+    <meta name="description" content="AI-powered job discovery, resume tailoring, Google Drive upload, and Google Sheets tracking dashboard.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <span class="logo-icon">✦</span>
+                    <h1>Resume Bot</h1>
+                    <span class="version-badge">v2.0</span>
+                </div>
+                <p class="header-sub">AI-powered job discovery · Resume tailoring · Google Drive & Sheets sync</p>
+            </div>
+            <div class="header-right">
+                <span class="status-pill" id="status-pill">
+                    <span class="status-dot"></span>
+                    <span id="status-text">Idle</span>
+                </span>
+            </div>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="tabs-nav">
+            <button class="tab active" data-tab="dashboard">📊 Dashboard</button>
+            <button class="tab" data-tab="pending">📋 Pending Jobs</button>
+            <button class="tab" data-tab="approved">✅ Approved</button>
+            <button class="tab" data-tab="settings">⚙️ Settings</button>
+            <button class="tab" data-tab="about">ℹ️ About</button>
+        </nav>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!--  TAB: Dashboard                                        -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <div id="tab-dashboard" class="tab-panel active">
+            <!-- Stat Cards -->
+            <section class="stats-grid">
+                <div class="stat-card" id="stat-total">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                        <span>📦</span>
+                    </div>
+                    <div class="stat-body">
+                        <span class="stat-label">Total Jobs Found</span>
+                        <span class="stat-value" id="metric-total">0</span>
+                    </div>
+                </div>
+                <div class="stat-card" id="stat-today">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                        <span>🆕</span>
+                    </div>
+                    <div class="stat-body">
+                        <span class="stat-label">New Today</span>
+                        <span class="stat-value" id="metric-today">0</span>
+                    </div>
+                </div>
+                <div class="stat-card" id="stat-pending">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #ffecd2, #fcb69f);">
+                        <span>⏳</span>
+                    </div>
+                    <div class="stat-body">
+                        <span class="stat-label">Pending Review</span>
+                        <span class="stat-value" id="metric-pending">0</span>
+                    </div>
+                </div>
+                <div class="stat-card" id="stat-approved">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #a1c4fd, #c2e9fb);">
+                        <span>✅</span>
+                    </div>
+                    <div class="stat-body">
+                        <span class="stat-label">Approved</span>
+                        <span class="stat-value" id="metric-approved">0</span>
+                    </div>
+                </div>
+                <div class="stat-card" id="stat-rejected">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #fbc2eb, #a6c1ee);">
+                        <span>❌</span>
+                    </div>
+                    <div class="stat-body">
+                        <span class="stat-label">Rejected</span>
+                        <span class="stat-value" id="metric-rejected">0</span>
+                    </div>
+                </div>
+                <div class="stat-card" id="stat-ats">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                        <span>🎯</span>
+                    </div>
+                    <div class="stat-body">
+                        <span class="stat-label">Avg ATS Score</span>
+                        <span class="stat-value" id="metric-ats">0%</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dashboard Grid: Scanner + Status + Logs -->
+            <div class="dash-grid">
+                <!-- Left: Scanner & Sync Status -->
+                <div class="dash-col">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🔍 Job Scanner</h3>
+                        </div>
+                        <p class="card-desc">Discover remote software jobs from LinkedIn, Indeed, Glassdoor, We Work Remotely, RemoteOK, and more using AI + web scrapers.</p>
+                        <button id="btn-toggle-scheduler" class="btn btn-primary btn-full">Start Auto-Scanner</button>
+                        <button id="btn-force-scan" class="btn btn-outline btn-full">Find Jobs Now</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🔗 Sync Status</h3>
+                        </div>
+                        <div class="sync-status-list">
+                            <div class="sync-item">
+                                <span class="sync-dot" id="sync-drive-dot"></span>
+                                <span>Google Drive</span>
+                                <span class="sync-count" id="sync-drive-count">0 resumes</span>
+                            </div>
+                            <div class="sync-item">
+                                <span class="sync-dot" id="sync-sheets-dot"></span>
+                                <span>Google Sheets</span>
+                                <span class="sync-count" id="sync-sheets-count">Connected</span>
+                            </div>
+                            <div class="sync-item">
+                                <span class="sync-dot" id="sync-scanner-dot"></span>
+                                <span>Auto-Scanner</span>
+                                <span class="sync-count" id="sync-scanner-status">Off</span>
+                            </div>
+                            <div class="sync-item">
+                                <span class="sync-dot sync-dot-active"></span>
+                                <span>Resumes Generated</span>
+                                <span class="sync-count" id="sync-resumes-count">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Recent Jobs + Logs -->
+                <div class="dash-col">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🕐 Recent Jobs</h3>
+                        </div>
+                        <div id="recent-jobs-list" class="recent-jobs-list">
+                            <div class="empty-state-sm">No jobs discovered yet. Run a scan to get started.</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>📝 Activity Log</h3>
+                        </div>
+                        <div id="logs-container" class="log-box">No activity yet.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!--  TAB: Pending Jobs                                     -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <div id="tab-pending" class="tab-panel">
+            <div class="panel-toolbar">
+                <button onclick="bulkApprove()" class="btn btn-sm btn-success">✓ Approve All Pending</button>
+                <button onclick="bulkRejectLow()" class="btn btn-sm btn-danger">✕ Reject Below 70 ATS</button>
+                <span class="toolbar-info" id="pending-count-label">0 jobs pending</span>
+            </div>
+            <div id="pending-list" class="job-list">
+                <div class="empty-state">No pending jobs. Click <strong>Find Jobs Now</strong> on the Dashboard to discover opportunities.</div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!--  TAB: Approved                                         -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <div id="tab-approved" class="tab-panel">
+            <div class="panel-toolbar">
+                <span class="toolbar-info" id="approved-count-label">0 approved jobs</span>
+            </div>
+            <div id="approved-list" class="job-list">
+                <div class="empty-state">No approved jobs yet. Review pending jobs and click <strong>Approve & Log</strong>.</div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!--  TAB: Settings                                         -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <div id="tab-settings" class="tab-panel">
+            <div class="settings-layout">
+                <div class="card">
+                    <h3 class="settings-title">🤖 AI Engine</h3>
+                    <div class="field">
+                        <label for="llm_provider">LLM Provider</label>
+                        <select id="llm_provider" class="input">
+                            <option value="gemini">Google Gemini (Recommended)</option>
+                            <option value="groq">Groq (Llama 3 — Free)</option>
+                            <option value="openrouter">OpenRouter</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="gemini_key">Gemini API Key</label>
+                        <input type="password" id="gemini_key" class="input" placeholder="AIza...">
+                    </div>
+                    <div class="field">
+                        <label for="groq_key">Groq API Key</label>
+                        <input type="password" id="groq_key" class="input" placeholder="gsk_...">
+                    </div>
+                    <div class="field">
+                        <label for="openrouter_key">OpenRouter API Key</label>
+                        <input type="password" id="openrouter_key" class="input" placeholder="sk-or-...">
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="settings-title">📊 Google Sheets & Drive</h3>
+                    <div class="field">
+                        <label for="sheet_title">Spreadsheet Name</label>
+                        <input type="text" id="sheet_title" class="input">
+                    </div>
+                    <div class="field">
+                        <label for="sheet_id">Spreadsheet ID</label>
+                        <input type="text" id="sheet_id" class="input">
+                    </div>
+                    <div class="field">
+                        <label for="sheet_tab">Target Tab</label>
+                        <input type="text" id="sheet_tab" class="input">
+                    </div>
+                    <div class="field">
+                        <label for="keywords">Search Keywords (comma separated)</label>
+                        <textarea id="keywords" class="input" rows="3" placeholder="React Developer, Python Developer, Full Stack Engineer"></textarea>
+                    </div>
+                    <button onclick="saveSettings()" class="btn btn-primary btn-full">💾 Save Settings</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!--  TAB: About / System Architecture                      -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <div id="tab-about" class="tab-panel">
+            <div id="about-content" class="about-container">
+                <div class="about-loading">Loading system information...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!--  Resume Preview Modal                                      -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div id="preview-modal" class="modal-overlay">
+        <div class="modal-box" id="preview-modal-box">
+            <div class="modal-header">
+                <h3 id="modal-title">Resume Preview</h3>
+                <div style="display: flex; gap: 8px;">
+                    <button class="modal-close" onclick="toggleMaximize()" title="Maximize/Restore">🗖</button>
+                    <button class="modal-close" onclick="closeModal()" title="Close">✕</button>
+                </div>
+            </div>
+            <textarea id="modal-text" class="input" readonly rows="22" style="font-family: 'Courier New', monospace; font-size: 0.85rem;"></textarea>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!--  Floating AI Chatbot Widget                                -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div id="chatbot-fab" class="chatbot-fab" onclick="toggleChatbot()" title="Ask AI Assistant">
+        <span class="chatbot-fab-icon">🤖</span>
+        <span class="chatbot-fab-pulse"></span>
+    </div>
+
+    <div id="chatbot-window" class="chatbot-window">
+        <div class="chatbot-header">
+            <div class="chatbot-header-left">
+                <span class="chatbot-header-icon">🤖</span>
+                <div>
+                    <div class="chatbot-header-title">Resume Bot AI</div>
+                    <div class="chatbot-header-status">Online · Ask me anything</div>
+                </div>
+            </div>
+            <button class="chatbot-minimize" onclick="toggleChatbot()" title="Minimize">—</button>
+        </div>
+        <div id="chatbot-messages" class="chatbot-messages">
+            <div class="chat-bubble assistant">
+                👋 Hi! I'm your AI career assistant. I can help with:<br><br>
+                • <strong>Resume tips</strong> — optimize for specific jobs<br>
+                • <strong>Interview prep</strong> — common questions & STAR method<br>
+                • <strong>Job analysis</strong> — understand requirements<br>
+                • <strong>Career guidance</strong> — skills, salary, growth<br>
+                • <strong>Project info</strong> — how this platform works<br><br>
+                Just type your question below!
+            </div>
+        </div>
+        <div class="chatbot-input-area">
+            <textarea id="chatbot-input" class="chatbot-input" rows="2" placeholder="Ask about jobs, resume tips, interview prep..."></textarea>
+            <button id="chatbot-send" class="chatbot-send-btn" onclick="sendChatMessage()">
+                <span>➤</span>
+            </button>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js?v=5"></script>
+</body>
+</html>
