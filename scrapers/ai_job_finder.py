@@ -42,15 +42,8 @@ RULES:
 """
 
     def search_jobs(self, keywords: List[str]) -> List[JobPosting]:
-        """Use Gemini AI to find/generate job listings matching keywords."""
-        if not config.GEMINI_API_KEY:
-            raise ValueError("Gemini API key is required for AI Job Finder.")
-
-        genai.configure(api_key=config.GEMINI_API_KEY)
-        model = genai.GenerativeModel(
-            model_name=config.GEMINI_MODEL,
-            system_instruction=self.SYSTEM_PROMPT,
-        )
+        """Use the configured LLM provider to find/generate job listings matching keywords."""
+        from core.llm_client import LLMClient
 
         keywords_str = ", ".join(keywords)
         import random
@@ -74,8 +67,9 @@ RULES:
         )
 
         try:
-            response = model.generate_content(user_prompt)
-            raw_text = response.text.strip()
+            # Route through LLMClient so it can use Groq/Gemini/OpenRouter as configured
+            raw_text = LLMClient.call_llm(self.SYSTEM_PROMPT, user_prompt, provider=config.DEFAULT_LLM_PROVIDER)
+            raw_text = raw_text.strip()
 
             # Strip markdown fences if present
             raw_text = re.sub(r"^```(?:json)?", "", raw_text, flags=re.MULTILINE).strip()
