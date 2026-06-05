@@ -15,6 +15,13 @@ class WeWorkRemotelyScraper(BaseScraper):
         postings = []
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
         
+        # Build a set of individual search words from keyword phrases
+        search_words = set()
+        for kw in keywords:
+            for word in kw.lower().split():
+                if len(word) > 2:
+                    search_words.add(word)
+
         for url in self.feed_urls:
             try:
                 res = requests.get(url, headers=headers, timeout=10)
@@ -32,12 +39,9 @@ class WeWorkRemotelyScraper(BaseScraper):
                     soup = BeautifulSoup(desc_html, "html.parser")
                     description = soup.get_text(separator="\n").strip()
                     
-                    # Check keywords match in title or description
-                    match = False
-                    for kw in keywords:
-                        if kw.lower() in title.lower() or kw.lower() in description.lower():
-                            match = True
-                            break
+                    # Check if ANY search word matches in title or description
+                    searchable = f"{title} {description}".lower()
+                    match = any(word in searchable for word in search_words)
                             
                     if match:
                         company = "Unknown Company"

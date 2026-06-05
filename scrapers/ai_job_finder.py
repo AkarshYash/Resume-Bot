@@ -25,7 +25,7 @@ Each job must be a JSON object with these exact keys:
   "title": "exact job title",
   "company": "company name",
   "location": "Remote - US",
-  "description": "2-3 sentence description of the role, key requirements, and tech stack",
+  "description": "short 1-sentence summary of the role and tech stack",
   "apply_url": "realistic apply URL from a job portal",
   "platform": "which job portal (LinkedIn, Indeed, etc.)",
   "posted_date": "approximate posting date in format like Jun 2, 2026"
@@ -38,8 +38,27 @@ RULES:
 - Include a mix of different tech stacks (Python, React, Node.js, Java, Go, etc.)
 - Use realistic company names and job portals
 - Return ONLY the raw JSON array, no markdown fences, no extra text
+- Keep descriptions SHORT (1 sentence max) to save space
 - Each job description should mention 3-5 specific technologies
 """
+
+    @staticmethod
+    def _recover_truncated_json(text: str) -> list:
+        """Attempt to recover a JSON array from a response truncated mid-stream."""
+        # Strategy: find the last complete object (ends with '}') and close the array
+        last_brace = text.rfind("}")
+        if last_brace == -1:
+            return []
+        candidate = text[:last_brace + 1].rstrip().rstrip(",") + "\n]"
+        # Ensure it starts with '['
+        bracket = candidate.find("[")
+        if bracket == -1:
+            return []
+        candidate = candidate[bracket:]
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError:
+            return []
 
     def search_jobs(self, keywords: List[str]) -> List[JobPosting]:
         """Use the configured LLM provider to find/generate job listings matching keywords."""
@@ -57,13 +76,13 @@ RULES:
         ])
 
         user_prompt = (
-            f"Find 30 current US-based fully remote job openings in these categories: {keywords_str}.\n"
+            f"Find 10 current US-based fully remote job openings in these categories: {keywords_str}.\n"
             f"Include jobs from multiple job portals (LinkedIn, Indeed, Glassdoor, We Work Remotely, etc.).\n"
             f"Focus on software development, cloud engineering, full stack, frontend, backend, "
             f"DevOps, AI/ML, and data engineering roles.\n"
             f"{random_modifier}\n"
             f"Ensure these are unique compared to typical generic examples. "
-            f"Return the results as a JSON array."
+            f"Return the results as a JSON array. Keep descriptions very short (1 sentence)."
         )
 
         try:
@@ -80,7 +99,17 @@ RULES:
             if match:
                 raw_text = match.group(0)
 
-            jobs_data = json.loads(raw_text)
+            try:
+                jobs_data = json.loads(raw_text)
+            except json.JSONDecodeError:
+                # Response was likely truncated by token limit — try to recover
+                print("AI Job Finder: JSON truncated, attempting recovery...")
+                jobs_data = self._recover_truncated_json(raw_text)
+                if jobs_data:
+                    print(f"AI Job Finder: Recovered {len(jobs_data)} jobs from truncated response")
+                else:
+                    print("AI Job Finder: Recovery failed, no jobs parsed")
+                    return []
 
             postings = []
             import urllib.parse
@@ -110,9 +139,6 @@ RULES:
 
             return postings
 
-        except json.JSONDecodeError as e:
-            print(f"AI Job Finder JSON parse error: {e}")
-            return []
         except Exception as e:
             print(f"AI Job Finder error: {e}")
             return []
